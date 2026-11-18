@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTA_6_EARLY_DOWNLOAD</title>
+    <style>
+        body {
+            background-color: #050505;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: "Courier New", Courier, monospace;
+        }
+        .download-btn {
+            background: linear-gradient(180deg, #4cff00 0%, #1c8a00 100%);
+            color: #000000;
+            font-family: "Comic Sans MS", "Arial Black", sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            padding: 25px 50px;
+            border: 6px outset #9eff75;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 25px rgba(76, 255, 0, 0.7);
+            transition: transform 0.05s;
+        }
+        .download-btn:hover {
+            background: linear-gradient(180deg, #7bff42 0%, #24b300 100%);
+            box-shadow: 0 0 40px rgba(76, 255, 0, 1);
+        }
+        .download-btn:active {
+            border-style: inset;
+            transform: scale(0.97);
+        }
+        #status {
+            color: #39ff14;
+            margin-top: 20px;
+            font-size: 16px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="download-btn" onclick="downloadGtaZip()">
+        ⬇ DOWNLOAD NOW ⬇
+    </button>
+    <div id="status"></div>
+
+    <script>
+        function downloadGtaZip() {
+            document.getElementById("status").innerText = "Downloading GTA_6.zip...";
+
+            const filePath = "GTA 6/config.txt";
+            const fileText = [
+                "control=WASD",
+                "graphics=ultra",
+                "fps=999",
+                "jiggle=69",
+                "bugs=false"
+            ].join("\r\n");
+
+            const encoder = new TextEncoder();
+            const nameBytes = encoder.encode(filePath);
+            const dataBytes = encoder.encode(fileText);
+
+            // Calculate CRC32 for valid ZIP archive
+            const crcTable = new Uint32Array(256);
+            for (let i = 0; i < 256; i++) {
+                let c = i;
+                for (let k = 0; k < 8; k++) {
+                    c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                }
+                crcTable[i] = c;
+            }
+            let crc = 0xFFFFFFFF;
+            for (let i = 0; i < dataBytes.length; i++) {
+                crc = crcTable[(crc ^ dataBytes[i]) & 0xFF] ^ (crc >>> 8);
+            }
+            crc = (crc ^ 0xFFFFFFFF) >>> 0;
+
+            // Build Local File Header
+            const localHeader = new Uint8Array(30 + nameBytes.length);
+            const lv = new DataView(localHeader.buffer);
+            lv.setUint32(0, 0x04034b50, true);
+            lv.setUint16(4, 20, true);
+            lv.setUint16(8, 0, true);
+            lv.setUint32(14, crc, true);
+            lv.setUint32(18, dataBytes.length, true);
+            lv.setUint32(22, dataBytes.length, true);
+            lv.setUint16(26, nameBytes.length, true);
+            localHeader.set(nameBytes, 30);
+
+            // Build Central Directory Header
+            const centralHeader = new Uint8Array(46 + nameBytes.length);
+            const cv = new DataView(centralHeader.buffer);
+            cv.setUint32(0, 0x02014b50, true);
+            cv.setUint16(4, 20, true);
+            cv.setUint16(6, 20, true);
+            cv.setUint32(16, crc, true);
+            cv.setUint32(20, dataBytes.length, true);
+            cv.setUint32(24, dataBytes.length, true);
+            cv.setUint16(28, nameBytes.length, true);
+            cv.setUint32(42, 0, true);
+            centralHeader.set(nameBytes, 46);
+
+            // Build End of Central Directory Record
+            const offset = localHeader.length + dataBytes.length;
+            const eocd = new Uint8Array(22);
+            const ev = new DataView(eocd.buffer);
+            ev.setUint32(0, 0x06054b50, true);
+            ev.setUint16(8, 1, true);
+            ev.setUint16(10, 1, true);
+            ev.setUint32(12, centralHeader.length, true);
+            ev.setUint32(16, offset, true);
+
+            // Trigger browser download
+            const blob = new Blob([localHeader, dataBytes, centralHeader, eocd], { type: "application/zip" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "GTA_6.zip";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+    </script>
+
+</body>
+</html>
