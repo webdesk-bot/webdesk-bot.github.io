@@ -56,13 +56,17 @@
         function downloadGtaZip() {
             document.getElementById("status").innerText = "Downloading GTA_6.zip...";
 
-            const filePath = "GTA 6/config.txt";
+            const filePath = "GTA 6/config.ini";
             const fileText = [
+                "GTA VI"
                 "control=WASD",
                 "graphics=ultra",
                 "fps=999",
                 "jiggle=69",
-                "bugs=false"
+                "physics=max",
+                "bugs=false",
+                "pc-release=today",
+                "rockstar-permission=true"
             ].join("\r\n");
 
             const encoder = new TextEncoder();
